@@ -1,0 +1,759 @@
+home controller---------------------------------------
+
+
+package com.demo.demo;
+
+import java.util.ArrayList;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.demo.demo.dao.AuthorDao;
+import com.demo.demo.model.Author;
+
+@Controller
+public class HomeController {
+
+@Autowired
+AuthorDao dao;
+
+
+
+@RequestMapping(value="/")
+public String home(Model model)
+{
+return "home";
+}
+
+@RequestMapping(value="/display")
+public String display(Model model,@ModelAttribute Author author)
+{
+String status=dao.saveAuthor(author);
+model.addAttribute("status",status);
+return "display";
+}
+@RequestMapping(value="/disp")
+public String value(Model model,@RequestParam("authorName") String authorName) {
+	  Author author=dao.searchname(authorName); 
+	  model.addAttribute("author",author);
+	  return "name";
+	  }
+
+
+
+
+
+
+@RequestMapping(value="/disp1") 
+public String value1(Model model,@RequestParam("city") String city) {
+	ArrayList<Author> authors=dao.searchcity(city); 
+model.addAttribute("authors",authors);
+return "city"; 
+}
+
+
+
+@RequestMapping(value="/disp2")
+public String value2(Model model,@RequestParam("authorName") String authorName) 
+{
+	  String status=dao.deleteauthorName(authorName); 
+	  model.addAttribute("status",status); 
+	  return "display"; 
+	  }
+			 
+
+
+
+
+@RequestMapping(value="/update") 
+public String update() {
+	  return "update"; 
+	  }
+
+
+int AuthorId=0;
+private int authorId;
+
+@RequestMapping(value="/searchForUpdate")
+public String searchForUpdate(Model model,@RequestParam("authorId") Integer authorId) { 
+	  int authId=authorId;
+	  this.authorId=authId; 
+	  Author author=dao.getAuthorById(authId);
+model.addAttribute(author);
+return "update"; 
+}
+
+
+@RequestMapping(value="/updateData") 
+public String updateData(@ModelAttribute Author author) { 
+	  author.setAuthorId(authorId);
+
+dao.updateAuthorById(author);
+return "update"; 
+}
+
+
+
+
+}
+
+-----------------------------------------------------------
+dao
+
+
+package com.demo.demo.dao;
+
+import java.util.ArrayList;
+
+import javax.transaction.Transactional;
+
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.demo.demo.model.Author;
+@Transactional
+public class AuthorDao {
+	@Autowired
+	SessionFactory factory;
+
+
+	public AuthorDao() {
+	// TODO Auto-generated constructor stub
+	}
+
+
+	public AuthorDao(SessionFactory factory) {
+	super();
+	this.factory = factory;
+	}
+
+
+	public String saveAuthor(Author author){
+	try{
+	Session session=factory.getCurrentSession();
+	session.save(author);
+	return "Author Created";
+	}
+	catch (Exception e) {
+	// TODO: handle exception
+	e.printStackTrace();
+	}
+
+	return "cannot create Author";
+	}
+
+	public Author searchname(String authorName) {
+		try {
+			Session session=factory.getCurrentSession();
+			Query query=session.createQuery("from Author d where d.authorName=:authorName");
+			query.setParameter("authorName",authorName);
+			Author author=(Author)query.list().get(0);
+			return author;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+
+	public ArrayList<Author> searchcity(String city) {
+		try {
+			Session session=factory.getCurrentSession();
+			Query query=session.createQuery("from Author a where a.city=:city");
+			query.setParameter("city",city);
+			ArrayList<Author> authors=(ArrayList<Author>)query.list();
+			return authors;
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+
+	public  String deleteauthorName(String authorName) {
+		try {
+			Session session=factory.getCurrentSession();
+			Query query=session.createQuery(" delete from Author a where a.AuthorName=:authorName");
+			query.setParameter("authorName",authorName);
+			int count=query.executeUpdate();
+			if(count>0)
+			{
+				return "deleted";
+				
+			}
+		
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		return "not deleted";
+	}
+
+
+
+	
+	public Author getauthorById(int authorId){
+		try{
+		Session session=factory.getCurrentSession();
+		Author author=(Author)session.get(Author.class,authorId);
+		return author;
+		}
+		catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		}
+
+		return null;
+		}
+
+
+
+		public String updateAuthorById(Author author){
+		try{
+		Session session=factory.getCurrentSession();
+
+		System.out.println("author "+author);
+		session.update("Author",author);
+		return "Author Updated";
+		}
+		catch (Exception e) {
+		// TODO: handle exception
+		e.printStackTrace();
+		}
+
+		return "Cannot Update Author";
+		}
+
+
+		public Author getAuthorById(int authorId) {
+			try{
+				Session session=factory.getCurrentSession();
+				Author author=(Author)session.get(Author.class,authorId);
+				return author;
+				}
+				catch (Exception e) {
+				// TODO: handle exception
+				e.printStackTrace();
+				}
+
+				return null;
+		}
+
+
+
+
+
+
+
+	}
+	    
+
+	
+
+---------------------------------------------
+city
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+</head>
+<body>
+<h1>
+	author Search!  
+</h1>
+<c:forEach var="author" items="${authors}">
+<P>  AUTHOR NAME: ${author.authorName} </P>
+<P>  AUTHOR ID: ${author.authorId} </P>
+<P>  AUTHOR CITY ${author.city} </P>
+
+
+</c:forEach>
+
+</head>
+<body>
+
+---------------------
+del
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+</head>
+<body>
+<h1>
+	author Delete!  
+</h1>
+
+<P>   ${status}. </P>
+</body>
+</html>
+---------------------------------------
+display
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page session="false" %>
+<html>
+<head>
+<title>Home</title>
+<style>
+input[type=submit] {
+font-family: Trebuchet MS;
+background-color: black;
+border-color: black;
+border-width: 2px solid black;
+text-decoration: none;
+color: white;
+padding: 10px 60px;
+margin: 20px 20px;
+cursor: pointer;
+}
+input[type=submit]:hover {
+background-color: white;
+color: black;
+}
+input[type=text], select {
+  width: 50%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+</style>
+</head>
+<body bgcolor="black">
+<br>
+<center>
+<div style="background-color: black">
+<font face="Trebuchet MS" size="8" color="white">Welcome To Player Portal</font>
+</div>
+<div style="background-color: white;width: 550px;height: 400px">
+
+
+</head>
+<body>
+<h1>
+Hello world!  
+</h1>
+
+<P>  ${status} </P>
+</body>
+</html>
+--------------------------------
+delete
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+<style>
+input[type=submit] {
+font-family: Trebuchet MS;
+background-color: black;
+border-color: black;
+border-width: 2px solid black;
+text-decoration: none;
+color: white;
+padding: 10px 60px;
+margin: 20px 20px;
+cursor: pointer;
+}
+input[type=submit]:hover {
+background-color: white;
+color: black;
+}
+input[type=text], select {
+  width: 50%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+</style>
+
+</head>
+<body bgcolor="black">
+<br>
+<center>
+<div style="background-color: black">
+<font face="Trebuchet MS" size="8" color="white">Welcome To author Portal</font>
+</div>
+<div style="background-color: white;width: 550px;height: 350px">
+<font face="Trebuchet MS" size="5">Fill the details to delete author.</font><br><br>
+
+<form action="del">
+<tr><td><input type="authorName" name="authorName" placeholder="authorName"></td></tr>
+<br>
+
+<tr><td><input type="submit" value="deleteByName"></td></tr>
+</form>
+<form action="dels">
+<tr><td><input type="City" name="City" placeholder="City"></td></tr>
+<br>
+<tr><td><input type="submit" value="deletebyCity"></td></tr>
+</head>
+<body>
+
+
+------------------------------------
+home
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page session="false" %>
+<html>
+<head>
+<title>Home</title>
+<style>
+input[type=submit] {
+font-family: Trebuchet MS;
+background-color: black;
+border-color: black;
+border-width: 2px solid black;
+text-decoration: none;
+color: white;
+padding: 10px 60px;
+margin: 20px 20px;
+cursor: pointer;
+}
+input[type=submit]:hover {
+background-color: white;
+color: black;
+}
+input[type=text], select {
+  width: 50%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+</style>
+</head>
+<body bgcolor="red">
+<br>
+<center>
+<div style="background-color: white">
+<font face="Trebuchet MS" size="8" color="white">Welcome To Player Portal</font>
+</div>
+<div style="background-color: white;width: 550px;height: 400px">
+
+
+</head>
+<body>
+<h1>
+Hello Author PLz Provide ur Details!  
+</h1>
+<form action="display">
+
+Name:<input type="text" name="authorName">
+<br>
+Id:<input type="text" name="authorId">
+<br>City: <input type="text" name="city">
+<br>
+<input type="submit" name="save author">
+</form>
+
+<form action="update">
+<input type="submit" value="Update">
+</form>
+
+Hello author PLz Provide ur  city to search!  
+</h1>
+<form action="disp1">
+
+Name:<input type="text" name="city">
+
+<br>
+<input type="submit" name="search">
+</form>
+
+Hello author PLz Provide ur author name to search!  
+</h1>
+<form action="disp">
+
+Name:<input type="text" name="authorName">
+
+<br>
+<input type="submit" name="search">
+</form>
+
+Hello author PLz Provide ur  name to delete!  
+</h1>
+<form action="disp2">
+
+Name:<input type="text" name="authorName">
+
+<br>
+<input type="submit" name="search">
+</form>
+
+<br>
+<br>
+
+<br>
+<br>
+
+<br>
+<br>
+</body>
+</html>
+------------------------------------
+name
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+</head>
+<body>
+<h1>
+	author Search!  
+</h1><P>  AUTHOR NAME: ${author.authorName} </P>
+<P>  AUTHOR ID: ${author.authorId} </P>
+<P>  AUTHOR CITY ${author.city} </P>
+
+
+</head>
+<body>
+
+------------------------------
+save
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+<style>
+input[type=submit] {
+font-family: Trebuchet MS;
+background-color: black;
+border-color: black;
+border-width: 2px solid black;
+text-decoration: none;
+color: white;
+padding: 10px 60px;
+margin: 20px 20px;
+cursor: pointer;
+}
+input[type=submit]:hover {
+background-color: white;
+color: black;
+}
+input[type=text], select {
+  width: 50%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+</style>
+</head>
+<body bgcolor="black">
+<br>
+<center>
+<div style="background-color: black">
+<font face="Trebuchet MS" size="8" color="white">Welcome To author Portal</font>
+</div>
+<div style="background-color: white;width: 550px;height: 350px">
+<font face="Trebuchet MS" size="5">Fill the details to create Player.</font>
+
+<table>
+<form action="display">
+<tr><td><input type="authorName" name="authorName" placeholder="authorName"></td></tr>
+<br>
+<tr><td><input type="authorId" name="authorId" placeholder="authorId"></td></tr>
+<br>
+<tr><td><input type="City" name="City" placeholder="City"></td></tr>
+<br>
+<tr><td><input type="submit" value="save author"></td></tr>
+</form>
+</table>
+</body>
+</html>
+
+
+
+-------------------------------------------
+search
+
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+<style>
+input[type=submit] {
+font-family: Trebuchet MS;
+background-color: black;
+border-color: black;
+border-width: 2px solid black;
+text-decoration: none;
+color: white;
+padding: 10px 60px;
+margin: 20px 20px;
+cursor: pointer;
+}
+input[type=submit]:hover {
+background-color: white;
+color: black;
+}
+input[type=text], select {
+  width: 50%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+</style>
+
+</head>
+<body bgcolor="black">
+<br>
+<center>
+<div style="background-color: black">
+<font face="Trebuchet MS" size="8" color="white">Welcome To author Portal</font>
+</div>
+<div style="background-color: white;width: 550px;height: 350px">
+<font face="Trebuchet MS" size="5">Fill the details to search author.</font><br><br>
+<table>
+<form action="Name">
+<tr><td><input type="authorName" name="authorName" placeholder="authorName"></td></tr>
+<br>
+<tr><td><input type="submit" value="searchByName"></td></tr>
+</form>
+<form action="Names">
+<tr><td><input type="authorId" name="authorId" placeholder="authorId"></td></tr>
+<br>
+<tr><td><input type="submit" value="searchById"></td></tr>
+
+
+</body>
+</html>
+--------------------------------------------
+update
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ page session="false" %>
+<html>
+<head>
+<title>Update</title>
+<style>
+input[type=submit] {
+font-family: Trebuchet MS;
+background-color: black;
+border-color: black;
+border-width: 2px solid black;
+text-decoration: none;
+color: white;
+padding: 10px 60px;
+margin: 20px 20px;
+cursor: pointer;
+}
+input[type=submit]:hover {
+background-color: white;
+color: black;
+}
+input[type=text], select {
+  width: 50%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+</style>
+</head>
+<body bgcolor="black">
+<br>
+<center>
+<div style="background-color: black">
+<font face="Trebuchet MS" size="8" color="white">Welcome To author Portal</font>
+</div>
+<div style="background-color: white;width: 550px;height: 850px">
+<font face="Trebuchet MS" size="5">Fill the details to update  author.</font>
+
+<form action="searchForUpdate">
+Id:<input type="text" name="authorId" value="${author.authorId}">
+<input type="submit" value="search">
+</form>
+
+
+<form action="updateData">
+Name:<input type="text" name="authorName" value="${author.authorName}">
+<br>
+<br>City: <input type="text" name="city" value="${author.city}">
+<br>
+<input type="submit" value="update author">
+</form>
+
+</body>
+</html>
+----------------------------------------------------
+hibernate
+
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>        
+  <session-factory>
+    <property name="hibernate.dialect">org.hibernate.dialect.OracleDialect</property>
+    <property name="show_sql">true</property>
+    <property name="hibernate.connection.pool_size">1</property>
+    <property name="cache.provider_class">org.hibernate.cache.NoCacheProvider</property>
+    <property name="hbm2ddl.auto">update</property>
+
+    <mapping class="com.demo.demo.model.Author"/>
+
+  </session-factory>
+</hibernate-configuration>
+
+
+
+
